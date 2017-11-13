@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaterSimDCDC_Controls_Dotspatial", "WaterSimDCDC_Controls_Dotspatial\WaterSimDCDC_Controls_Dotspatial.csproj", "{DBEB60FE-81CF-4D1B-B125-8A5866495396}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaterSimDCDC_API_Extended", "..\WaterSim_API_Extended\WaterSimDCDC_API_Extended\WaterSimDCDC_API_Extended.csproj", "{926F393A-6324-4617-8ABE-CC31BBB1C4F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniDB", "..\UniDB\UniDB.csproj", "{6C3B5110-661C-4EAB-9CA3-070D1CA267EB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DBEB60FE-81CF-4D1B-B125-8A5866495396}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBEB60FE-81CF-4D1B-B125-8A5866495396}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBEB60FE-81CF-4D1B-B125-8A5866495396}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBEB60FE-81CF-4D1B-B125-8A5866495396}.Release|Any CPU.Build.0 = Release|Any CPU
+		{926F393A-6324-4617-8ABE-CC31BBB1C4F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{926F393A-6324-4617-8ABE-CC31BBB1C4F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{926F393A-6324-4617-8ABE-CC31BBB1C4F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{926F393A-6324-4617-8ABE-CC31BBB1C4F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C3B5110-661C-4EAB-9CA3-070D1CA267EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C3B5110-661C-4EAB-9CA3-070D1CA267EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C3B5110-661C-4EAB-9CA3-070D1CA267EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C3B5110-661C-4EAB-9CA3-070D1CA267EB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

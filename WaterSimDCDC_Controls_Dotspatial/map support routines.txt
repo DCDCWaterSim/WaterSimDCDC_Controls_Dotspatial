@@ -1,0 +1,405 @@
+
+
+        private void MapParameterListBox_ItemCheck(object sender, ItemCheckEventArgs e)
+        {
+            // get item index
+            int index = e.Index;
+            // get item text
+            string Fieldname = MapParameterListBox.Items[index].ToString();
+            int SepIndex = Fieldname.IndexOf(" : ");
+            Fieldname = Fieldname.Substring(0, SepIndex);
+            // if check then delete from map
+            if (MapParameterListBox.GetItemCheckState(index) == CheckState.Checked)
+            {
+                for (int i = 0; i < ProviderMap.Layers.Count; i++)
+                {
+                    if (ProviderMap.Layers[i].LegendText == Fieldname)
+                    {
+                        ProviderMap.Layers.Remove(ProviderMap.Layers[i]);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                int year = Convert.ToInt32(YearComboBox.Text);
+
+                AddFieldLayer(Fieldname, year, FCurrentScenario);
+            }
+
+        }
+
+
+         public MapPolygonLayer AddFieldLayer(string Fieldname, int year, string ScenarioName)
+        {
+            MapPolygonLayer MyLayer = null;
+            string MapTargetYear = year.ToString();
+            ScenarioName = ScenarioName.Trim().ToUpper();
+            if (MapDataTable != null)
+                if (MapDataTable.Columns.Contains(Fieldname))
+                {
+                    try
+                    {
+                        DataColumn DC = MapDataTable.Columns[Fieldname];
+
+                        MyLayer = AddProviderShapeFile(Fieldname); //(MapPolygonLayer)ProviderMap.AddLayer(DataDirectory + ShapeFilename);
+                        if (MyLayer == null)
+                        {
+                            MessageBox.Show("The Base ShapeFile is not a polygon layer.");
+                        }
+                        else
+                        {
+                            // Get the years
+                            string yrfield = WaterSimManager_DB.rdbfSimYear;
+                            string scnfield = WaterSimManager_DB.rdbfScenarioName;
+                            // MyLayer.DataSet.FillAttributes();
+
+                            DataTable LayerDT = MyLayer.DataSet.DataTable;
+                            DataColumn AddColumn = new DataColumn(DC.ColumnName, DC.DataType);
+                            LayerDT.Columns.Add(AddColumn);
+
+                            if (ScenarioName == FIRSTSCENARIO)
+                            {
+                                ScenarioName = MapDataTable.Rows[0][WaterSimManager_DB.rdbfScenarioName].ToString().ToUpper().Trim();
+                            }
+                            if (year == 0)
+                            {
+                                MapTargetYear = MapDataTable.Rows[0][WaterSimManager_DB.rdbfSimYear].ToString();
+                            }
+                            int lowval = 999999999;
+                            int highval = -999999999;
+                            int ZeroOrBelowCnt = 0;
+                            int AboveZeroCnt = 0;
+                            foreach (DataRow DR in LayerDT.Rows)
+                            {
+                                Boolean found = false;
+                                string pfcode = DR["Provider"].ToString().Trim();  // Get the Provider Field code for this SHape File Record
+                                // find this code in Scenario DataTable
+                                foreach (DataRow ScnDR in MapDataTable.Rows)
+                                {
+                                    string ScnName = ScnDR[scnfield].ToString().Trim().ToUpper();
+                                    string TheYear = ScnDR[yrfield].ToString().Trim();
+                                    if ((TheYear == MapTargetYear) && (ScnName == ScenarioName))
+                                    {
+                                        string Scnpfcode = ScnDR[WaterSimManager_DB.rdbfProviderCode].ToString().Trim();  // "PRVDCODE"
+                                        if (pfcode == Scnpfcode)
+                                        {
+                                            DR[Fieldname] = ScnDR[Fieldname].ToString();
+                                            found = true;
+                                            int value = 0;
+                                            string valstr = DR[Fieldname].ToString();
+                                            try
+                                            {
+                                                value = Convert.ToInt32(valstr);
+                                                if (lowval > value) lowval = value;
+                                                if (highval < value) highval = value;
+                                            }
+                                            catch (Exception e)
+                                            {
+
+                                            }
+                                            break;
+                                        }
+                                        if (!found)
+                                        {
+                                            if (DC.DataType == System.Type.GetType("System.String"))
+                                            {
+                                                DR[Fieldname] = "";// System.DBNull.Value;
+                                            }
+                                            else
+                                            {
+                                                DR[Fieldname] = 0;// System.DBNull.Value;// SpecialValues.MissingIntValue;
+                                            }
+                                        }
+                                    } //= provider
+                                } // = target year
+                            }
+                            //MyLayer.DataSet.FillAttributes();
+
+                            if (DC.DataType == System.Type.GetType("System.String"))
+                            {
+                                PolygonScheme FldScheme = new PolygonScheme();
+                                FldScheme.EditorSettings.ClassificationType = ClassificationType.UniqueValues;
+                                ////Set the UniqueValue field name
+                                FldScheme.EditorSettings.FieldName = Fieldname;
+                                // Create Catagories based on data
+                                FldScheme.CreateCategories(LayerDT);
+                                MyLayer.Symbology = FldScheme;
+                            }
+                            else
+                            {
+                                if (Fieldname == "????")
+                                {
+                                    // PolygonScheme FldScheme = new PolygonScheme();
+                                    PolygonScheme FldScheme = new PolygonScheme();
+
+                                    PolygonCategory[] LHRange = new PolygonCategory[8];//10];
+
+                                    LHRange[0] = new PolygonCategory(Color.Red, Color.Black, 1);
+                                    //LHRange[1] = new PolygonCategory(Color.SandyBrown, Color.Black, 1);
+                                    LHRange[1] = new PolygonCategory(Color.LightSalmon, Color.Black, 1);
+                                    LHRange[2] = new PolygonCategory(Color.LightGreen, Color.Black, 1);
+                                    LHRange[3] = new PolygonCategory(Color.YellowGreen, Color.Black, 1);
+                                    LHRange[4] = new PolygonCategory(Color.LightSeaGreen, Color.Black, 1);
+                                    LHRange[5] = new PolygonCategory(Color.Blue, Color.Black, 1);
+                                    LHRange[6] = new PolygonCategory(Color.DarkBlue, Color.Red, 1);
+                                    LHRange[7] = new PolygonCategory(Color.Transparent, Color.Black, 1);
+                                    //LHRange[9] = new PolygonCategory(Color.Transparent, Color.LightGray, 1);
+
+                                    LHRange[0].FilterExpression = "[NETAVG] <= -15000";
+                                    LHRange[0].LegendText = "  <= -15000";
+
+                                    //LHRange[1].FilterExpression = "[NETAVG] > -15000 AND [NETAVG] <= -1000";
+                                    // LHRange[1].LegendText = " > -15000 AND  <= -1000";
+
+                                    LHRange[1].FilterExpression = "[NETAVG] > -1000  AND [NETAVG] <= 0";
+                                    LHRange[1].LegendText = " > -1000 AND  <= 0";
+
+                                    LHRange[2].FilterExpression = "[NETAVG] > 0 AND [NETAVG] <= 50";
+                                    LHRange[2].LegendText = " > 0 AND <= 50";
+
+                                    LHRange[3].FilterExpression = "[NETAVG] > 50 AND [NETAVG] <= 250";
+                                    LHRange[3].LegendText = " > 50 AND  <= 250";
+
+                                    LHRange[4].FilterExpression = "[NETAVG] > 250 AND [NETAVG] <= 2500";
+                                    LHRange[4].LegendText = " > 250 AND <= 2500";
+
+                                    LHRange[5].FilterExpression = "[NETAVG] > 2500 AND [NETAVG] <= 10000";
+                                    LHRange[5].LegendText = " > 2500 AND  <= 10000";
+
+                                    LHRange[6].FilterExpression = "[NETAVG] > 10000";
+                                    LHRange[6].LegendText = " > 10,000";
+
+                                    LHRange[7].FilterExpression = "[NETAVG]  = NULL";
+                                    LHRange[7].LegendText = "= NULL";
+
+                                    //LHRange[0].FilterExpression = "[NETAVG] <= -17762";
+
+                                    //LHRange[1].FilterExpression = "[NETAVG] > -17762 AND [NETAVG] <= -13118";
+
+                                    //LHRange[2].FilterExpression = "[NETAVG] > -13118 AND [NETAVG] <= -8474";
+
+                                    //LHRange[3].FilterExpression = "[NETAVG] > -8474 AND [NETAVG] <= -3830";
+
+                                    //LHRange[4].FilterExpression = "[NETAVG] > -3830 AND [NETAVG] <= 814";
+
+                                    //LHRange[5].FilterExpression = "[NETAVG] > 814 AND [NETAVG] <= 5458";
+
+                                    //LHRange[6].FilterExpression = "[NETAVG] > 5458";
+
+                                    //LHRange[7].FilterExpression = "[NETAVG] = NULL";
+                                    for (int i = 0; i < LHRange.Length; i++)
+                                        FldScheme.AddCategory(LHRange[i]);
+                                    MyLayer.Symbology = FldScheme;
+
+                                    //double skipvalue = (Convert.ToDouble(highval) - Convert.ToDouble(lowval)) / 9.0;
+                                    //double temphigh = Convert.ToDouble(highval);
+                                    //double templow = temphigh - skipvalue;
+                                    //tempstr = "[" + Fieldname + "]  > " + templow.ToString().Substring(0, 7) + " AND " + temphigh.ToString().Substring(0, 7) + " <= " + "[" + Fieldname + "]  ";
+                                    //LHRange[0].FilterExpression = tempstr;
+
+                                    //for (int i = 1; i < 8; i++)
+                                    //{
+                                    //    temphigh = templow;
+                                    //    templow = templow - skipvalue;
+                                    //    tempstr = "[" + Fieldname + "]  > " + templow.ToString().Substring(0, 7) + " AND " + temphigh.ToString().Substring(0, 7) + " <= " + "[" + Fieldname + "]  ";
+                                    //    LHRange[0].FilterExpression = tempstr;
+                                    //}
+                                    //templow = Convert.ToDouble(lowval);
+                                    //tempstr = "[" + Fieldname + "]  => " + templow.ToString().Substring(0, 7) + " AND " + temphigh.ToString().Substring(0, 7) + " <= " + "[" + Fieldname + "]  ";
+                                    //LHRange[0].FilterExpression = tempstr;
+
+
+
+                                    //    tempstr = "[" + Fieldname + "] " + temp.ToString().Substring(0, 7) + " - ";
+                                    //    temp = temp + skipvalue;
+                                    //    tempstr += temp.ToString().Substring(0, 7);
+                                    //    LHRange[i].FilterExpression = tempstr;
+                                    //}
+                                    //LHRange[0].FilterExpression = "[" + Fieldname + "] " + " = 0";
+                                    //temp = temp + skipvalue;
+                                    //for (int i = 5; i < 7; i++)
+                                    //{
+                                    //    tempstr = "[" + Fieldname + "]   "+temp.ToString()+ " - " ;
+                                    //    temp = temp + skipvalue;
+                                    //    tempstr += temp.ToString();
+                                    //    LHRange[i].FilterExpression = tempstr;
+                                    //}
+                                    //LHRange[8].FilterExpression = "[" + Fieldname + "] " + " > " + temp.ToString();
+                                    //LHRange[9].FilterExpression = "[" + Fieldname + "] = NULL";
+                                    //FldScheme.ClearCategories();
+
+                                    //for (int i = 0; i < 10; i++)
+                                    //  FldScheme.AddCategory(LHRange[i]);
+
+                                    //FldScheme.EditorSettings.ClassificationType = ClassificationType.Quantities;
+                                    //FldScheme.EditorSettings.IntervalMethod = IntervalMethod.EqualInterval;
+                                    //FldScheme.EditorSettings.NumBreaks = 8;
+                                    //FldScheme.EditorSettings.FieldName = Fieldname;
+                                    //FldScheme.AppearsInLegend = true;
+                                    //FldScheme.CreateCategories(LayerDT);
+
+                                    //MyLayer.Symbology = FldScheme;
+
+                                }
+                                else
+                                {
+                                    PolygonScheme FldScheme = new PolygonScheme();
+                                    FldScheme.EditorSettings.ClassificationType = ClassificationType.Quantities;
+                                    FldScheme.EditorSettings.IntervalMethod = IntervalMethod.NaturalBreaks;
+                                    FldScheme.EditorSettings.NumBreaks = 7;
+                                    FldScheme.EditorSettings.FieldName = Fieldname;
+                                    FldScheme.AppearsInLegend = true;
+                                    FldScheme.CreateCategories(LayerDT);
+
+                                    //PolygonCategory MissingCat = new PolygonCategory(Color.WhiteSmoke, Color.DarkBlue, 1);
+                                    //MissingCat.FilterExpression = "[" + Fieldname + "] = "+SpecialValues.MissingIntValue;
+                                    //MissingCat.LegendText = "[" + Fieldname + "] = Missing";
+                                    //FldScheme.AddCategory(MissingCat);
+                                    PolygonCategory NullCat = new PolygonCategory(Color.WhiteSmoke, Color.DarkBlue, 1);
+                                    NullCat.FilterExpression = "[" + Fieldname + "] = NULL";
+                                    NullCat.LegendText = "[" + Fieldname + "] = NULL";
+                                    FldScheme.AddCategory(NullCat);
+
+                                   
+
+                                    MyLayer.Symbology = FldScheme;
+
+                                }
+
+                            }
+
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        MessageBox.Show("Error Loading Shape File:[ " + DataDirectory + ShapeFilename + "] :" + e.Message);
+                    }
+                }
+            return MyLayer;
+        }
+        //-------------------------------------------------------
+        public void AddProviderShapeFileLayers()
+        {
+            ProviderMap.Layers.Clear();
+            AddProviderBaseShapeFile();
+            MapPolygonLayer MPL = AddFieldLayer("PRVDCODE", 0, FCurrentScenario);
+
+
+
+            PolygonScheme BaseScheme = new PolygonScheme();
+            BaseScheme.EditorSettings.ClassificationType = ClassificationType.UniqueValues;
+            ////Set the UniqueValue field name
+            BaseScheme.EditorSettings.FieldName = "PRVDCODE";
+            // Create Catagories based on data
+            BaseScheme.CreateCategories(MPL.DataSet.DataTable);
+            MPL.Symbology = BaseScheme;
+
+
+        }
+        internal void AddProviderBaseShapeFile()
+        {
+            try
+            {
+                ProviderMap.AddLayer(DataDirectory + ShapeFilename);
+
+                //Assign the mappolygon layer from the map
+                MapPolygonLayer BaseLayer = default(MapPolygonLayer);
+                BaseLayer = (MapPolygonLayer)ProviderMap.Layers[0];
+
+                if (BaseLayer == null)
+                {
+                    MessageBox.Show("The Base Layer of Provider Map is not a polygon layer.");
+                }
+                else
+                {
+                    //Get the shapefile's attribute table to our datatable dt
+                    DataTable DT = BaseLayer.DataSet.DataTable;
+
+                    // Create a Scheme
+                    PolygonScheme BaseScheme = new PolygonScheme();
+                    //Set the ClassificationType for the PolygonScheme via EditorSettings
+                    BaseScheme.EditorSettings.ClassificationType = ClassificationType.UniqueValues;
+                    //Set the UniqueValue field name
+                    BaseScheme.EditorSettings.FieldName = "ADWR_NAME";
+                    // Create Catagories based on data
+                    BaseScheme.CreateCategories(DT);
+                    // Set the Symbology to this Scheme
+                    BaseLayer.Symbology = BaseScheme;
+
+
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Error Loading Shape File:[ " + DataDirectory + ShapeFilename + "] :" + e.Message);
+            }
+        }
+
+
+        //==================================================================
+        private void CopyChartMenuItem_Click(object sender, EventArgs e)
+        {
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                Bitmap b = new Bitmap(ProviderMap.Width, ProviderMap.Height);
+                Graphics g = Graphics.FromImage(b);
+                Rectangle r = new Rectangle(0, 0, ProviderMap.Width, ProviderMap.Height);
+                ProviderMap.MapFrame.Print(g, r);
+                Clipboard.SetImage(b);
+            }
+
+        }
+
+        private void saveAsMenuItem_Click(object sender, EventArgs e)
+        {
+            Bitmap b = new Bitmap(ProviderMap.Width, ProviderMap.Height);
+            Graphics g = Graphics.FromImage(b);
+            Rectangle r = new Rectangle(0, 0, ProviderMap.Width, ProviderMap.Height);
+            ProviderMap.MapFrame.Print(g, r);
+
+            //string fname = @"C:\temp\temp.jpg";
+            //b.Save(fname);
+
+            if (SaveMapToFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                string filename = SaveMapToFileDialog.FileName;
+                string ext = Path.GetExtension(filename).ToUpper();
+                b.Save(filename);
+                //if (ext == ".BMP")
+                //{  g.SaveImage(filename, ChartImageFormat.Bmp); }
+                //else
+                //    if ((ext == ".JPG") || (ext == ".JPEG"))
+                //    { WaterSimChart.SaveImage(filename, ChartImageFormat.Jpeg); }
+                //    else
+                //        if (ext == ".EMF")
+                //        { WaterSimChart.SaveImage(filename, ChartImageFormat.EmfPlus); }
+                //        else
+                //            if (ext == ".PNG")
+                //            { WaterSimChart.SaveImage(filename, ChartImageFormat.Png); }
+                //            else
+                //                if ((ext == ".TIF") || (ext == ".TIFF"))
+                //                { WaterSimChart.SaveImage(filename, ChartImageFormat.Tiff); }
+
+
+            }
+
+        }
+
+
+      DataTable MapDataTable;
+        const string ShapeFilename = "Map_Data\\WaterSim 2012 Providers_no_np.shp";
+        string DataDirectory = "";
+        string FCurrentScenario = FIRSTSCENARIO;
+      OleDbConnection DbConnection;
+     internal string FCurrentTableName = "";
+       internal dbTool.SQLServer SQLServer = dbTool.SQLServer.stAccess;
+
+in initialize component
+ AddProviderBaseShapeFile();
+
+Warning	2	'DotSpatial.Controls.SpatialToolStrip' is obsolete: 'Load the DotSpatial.Plugins.MenuBar into a form that implements IHeaderControl instead. See http://tinyurl.com/obsolete1'	G:\DCDC\WaterSim_DCDC_50\VS Projects\WaterSim_API_5_0\WaterSimDCDC_API_Ver_5\WaterSimDCDC_Controls_Dotspatial\WaterSimDCDC_Controls_Dotspatial\MapDashboard.Designer.cs	37	62	WaterSimDCDC_Controls_Dotspatial
+
+
+
